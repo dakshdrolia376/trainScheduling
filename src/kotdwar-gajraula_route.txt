@@ -1,0 +1,20 @@
+kotdwar-ktw	0.0 1 0 0 1 0 0 1
+saneh-road-snx 9.2 1 0 0 1 0 0 1
+mathurapur-mor-halt-mrpm 14.0 1 0 0 1 0 0 1
+najibabad-junction-nbd	24.2 1 2 2 0 2 2 0
+fazalpur-fzl 29.9 1 1 1 0 1 1 1
+muazzampur-narayan-junction-mzm	35.4 1 1 1 1 1 1
+basi-kiratpur-bskr	45.9 1 1 1 0 1 1 0
+suaheri-sxq	52.0 1 0 0 1 0 0 1
+bijnor-bjo 60.3 1 1 1 1 2 2 0
+khari-jhalu-kjlu 69.8 1 0 0 1 0 0 1
+haldaur-hldr 77.5 1 1 1 0 1 1 0
+amhera-arh	81.1 1 0 0 1 0 0 1
+sisauna-sisn 85.9 1 0 0 1 0 0 1
+chandpur-siau-cps 95.5 1 1 1 0 1 1 0
+bagarpur-halt-bgrr	102.2 1 0 0 1 0 0 1
+bakaina-halt-bkna 107.3 1 0 0 1 0 0 1
+chuchela-kalan-clkn	 110.3 1 0 0 1 0 0 1
+mandi-dhanaura-mndr	115.6 1 0 0 1 0 0 1
+sherpur-sepr 120.9 1 0 0 1 0 0 1
+gajraula-junction-gjl 130.9 1 2 2 0 2 2 0
