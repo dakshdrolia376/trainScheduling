@@ -11,6 +11,79 @@ import java.util.List;
 import org.jfree.ui.RefineryUtilities;
 
 import static java.util.Objects.requireNonNull;
+import java.lang.Thread;
+
+class MyThread implements Runnable {
+    String name; // name of thread
+    List<List<Path>> scheduleOftrainOnEachDay;
+    String pathMaxSpeedLimit;
+    String pathTemp;
+    String pathRoute;
+    String pathBestRoute;
+    String pathOldTrainSchedule;
+    boolean isSingleDay;
+    int trainDay;
+    boolean usePreviousComputation;
+    double ratio;
+    String pathRouteTimeFile;
+    String newTrainType;
+    String pathLog;
+    TrainTime sourceTime;
+    String pathRouteStopTime;
+    int trainNotToLoad;
+    String pathStationDatabase;
+    String pathTrainTypeAverageSpeedList;
+    Thread t;
+    int index;
+    MyThread(int index, List<List<Path>> scheduleOftrainOnEachDay, String pathMaxSpeedLimit, String pathTemp, String pathRoute, String pathBestRoute, String pathOldTrainSchedule, boolean isSingleDay,
+             int trainDay, boolean usePreviousComputation, double ratio, String pathRouteTimeFile, String newTrainType,
+             String pathLog, TrainTime sourceTime, String pathRouteStopTime, int trainNotToLoad, String pathStationDatabase,String pathTrainTypeAverageSpeedList) {
+        this.index = index;
+        this.scheduleOftrainOnEachDay = scheduleOftrainOnEachDay;
+        this.pathBestRoute = pathBestRoute;
+        this.pathMaxSpeedLimit = pathMaxSpeedLimit;
+        this.pathTemp = pathTemp;
+        this.pathRoute = pathRoute;
+        this.pathOldTrainSchedule = pathOldTrainSchedule;
+        this.isSingleDay = isSingleDay;
+        this.trainDay = trainDay;
+        this.usePreviousComputation = usePreviousComputation;
+        this.ratio = ratio;
+        this.pathRouteTimeFile = pathRouteTimeFile;
+        this.newTrainType = newTrainType;
+        this.pathLog = pathLog;
+        this.sourceTime = sourceTime;
+        this.pathRouteStopTime = pathRouteStopTime;
+        this.trainNotToLoad = trainNotToLoad;
+        this.pathStationDatabase = pathStationDatabase;
+        this.pathTrainTypeAverageSpeedList = pathTrainTypeAverageSpeedList;
+        t = new Thread(this);
+        t.start();
+    }
+
+    public void run() {
+//        try {
+        System.out.println("Thread " +Integer.toString(this.index) + "starting" );
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        Scheduler scheduler = new Scheduler();
+        List<Path> paths ;
+        System.out.println("Check "+ Integer.toString(this.index));
+        paths = scheduler.test(pathMaxSpeedLimit, pathTemp, pathRoute, pathBestRoute, pathOldTrainSchedule, isSingleDay,
+         trainDay, usePreviousComputation, ratio, pathRouteTimeFile, newTrainType,
+                pathLog, sourceTime, pathRouteStopTime, trainNotToLoad, pathStationDatabase, pathTrainTypeAverageSpeedList);
+        scheduleOftrainOnEachDay.set(index, paths);
+
+        System.out.println("Thread " +Integer.toString(this.index) + "exiting" );
+//        } catch (InterruptedException e) {
+//            System.out.println(name + " interrupted.");
+//        }
+
+    }
+}
 
 public class Scheduler {
 
@@ -24,6 +97,7 @@ public class Scheduler {
     private List<Integer> stationNoOfUpTrackList;
     private List<Integer> stationNoOfDownTrackList;
     private List<Integer> stationNoOfDualTrackList;
+    private static List<List<Path>> scheduleOftrainOnEachDay;
 
     public List<String> getStationIdList() {
         return this.stationId;
@@ -236,8 +310,113 @@ public class Scheduler {
         RefineryUtilities.centerFrameOnScreen(demo);
         demo.setVisible(true);
     }
+    public Map<String, List<Integer>> getCongestionDetails(List<String> stationId) {
+        Map<String, List<Integer>> congestionDetails = new HashMap<>();
+        List<List<Map<String, String>>>scheduleForStation = new ArrayList<>();
+        DatabaseHelper databaseHelper = new DatabaseHelper();
+        for(String id: stationId) {
+            scheduleForStation.add(databaseHelper.getScheduleForStation(id));
+        }
+        String arrTime = new String();
+        int arrHour;
+        int arrMin;
+        for(int i=0;i<stationId.size();i++) {
+            List<Integer> congestion =  new ArrayList<Integer>(Collections.nCopies(24, 0));
+            for(Map.Entry<String, String> oldTrainArrivingDetails : scheduleForStation.get(i).get(0).entrySet()) {
+                arrTime = oldTrainArrivingDetails.getValue();
+                arrHour = Integer.parseInt(arrTime.split(":")[0]);
+                arrMin = Integer.parseInt(arrTime.split(":")[1]);
+                if (arrMin > 30)
+                    arrHour = (arrHour + 1) % 24;
+                congestion.set(arrHour, congestion.get(arrHour)+1);
+            }
+            congestionDetails.put(stationId.get(i), congestion);
+        }
+        return  congestionDetails;
+    }
+//    public List<Path> sortPathsWithCongestionRestraint(List<Path> oldPaths, List<String> stationId) {
+//        Map <String, List<Integer>> congestionDetailsOnRoute = getCongestionDetails(stationId);
+//        Collections.sort(oldPaths, new Comparator<Path>() {
+//            @Override
+//            public int compare(Path o1, Path o2) {
+//
+//                return 0;
+//            }
+//        });
+//    }
+    public void scheduleTrain(String pathMaxSpeedLimit, String pathTemp, String pathRoute, String pathBestRoute, String pathOldTrainSchedule, boolean isSingleDay, boolean usePreviousComputation, double ratio, String pathRouteTimeFile, String newTrainType,
+                              String pathLog, TrainTime sourceTime, String pathRouteStopTime, int trainNotToLoad, String pathStationDatabase,String pathTrainTypeAverageSpeedList, List<Boolean> runningStatusOnEachDay) {
 
-    public void test(String pathMaxSpeedLimit, String pathTemp, String pathRoute, String pathBestRoute, String pathOldTrainSchedule, boolean isSingleDay,
+        List<MyThread> myThreads = new ArrayList<>();
+        List<List<Path>> scheduleOftrainOnEachDay = new ArrayList<>(7);
+        for(int i=0;i<7;i++)
+            scheduleOftrainOnEachDay.add(new ArrayList<>());
+        for(int i=0;i<runningStatusOnEachDay.size();i++) {
+            List<Path> paths = new ArrayList<>();
+            if(runningStatusOnEachDay.get(i)) {
+                myThreads.add(new MyThread(i, scheduleOftrainOnEachDay, pathMaxSpeedLimit, pathTemp, pathRoute, pathBestRoute, pathOldTrainSchedule, isSingleDay,
+                        i, usePreviousComputation, ratio, pathRouteTimeFile, newTrainType,
+                        pathLog, sourceTime, pathRouteStopTime, trainNotToLoad, pathStationDatabase,pathTrainTypeAverageSpeedList));
+
+            }
+            else
+                scheduleOftrainOnEachDay.set(i, paths);
+        }
+        for(MyThread thread: myThreads) {
+            try {
+                thread.t.join();
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            PrintStream o1 = new PrintStream(new File(pathLog + File.separator + "output.log"));
+            System.setOut(o1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        for(int i=0;i<myThreads.size();i++) {
+            System.out.println("Thread "+Integer.toString(i)+" alive: " + myThreads.get(i).t.isAlive());
+        }
+        int temp = 0;
+        for(int i=0;i<7;i++) {
+            if(scheduleOftrainOnEachDay.get(i).size()!=0)
+                temp++;
+        }
+        System.out.println("Size of schedule list: "+ Integer.toString(temp));
+        int maximumAllowableTimeDifference = 30;
+        int firstDayOfTrain = runningStatusOnEachDay.indexOf(Boolean.TRUE);
+        int numberOfPathsForEachDay = 10;
+        int countOfPaths = 0;
+        if(firstDayOfTrain == -1) {
+            System.err.println("No running day for the train is specified");
+        } else {
+            for(int i=0; i < numberOfPathsForEachDay; i++) {
+                for(int j=firstDayOfTrain+1;j<scheduleOftrainOnEachDay.size();j++) {
+                    boolean pathAvailable = false;
+                    if(!runningStatusOnEachDay.get(j))
+                        pathAvailable = true;
+                    else {
+                        for (int k = 0; k < scheduleOftrainOnEachDay.get(j).size(); k++) {
+                            if (Math.abs(scheduleOftrainOnEachDay.get(j).get(k).getSourceTime().compareTo(scheduleOftrainOnEachDay.get(firstDayOfTrain).get(i).getSourceTime()) - (1440 * (j  - firstDayOfTrain)))<maximumAllowableTimeDifference){
+                                pathAvailable = true;
+                                break;
+                            }
+                        }
+                    }
+                    if(!pathAvailable) {
+                        break;
+                    } else if(j == scheduleOftrainOnEachDay.size()-1)
+                        System.out.println(scheduleOftrainOnEachDay.get(firstDayOfTrain).get(i).toString());
+                        countOfPaths ++;
+                }
+            }
+        }
+        System.out.println(countOfPaths);
+
+    }
+    public List<Path> test(String pathMaxSpeedLimit, String pathTemp, String pathRoute, String pathBestRoute, String pathOldTrainSchedule, boolean isSingleDay,
                      int trainDay, boolean usePreviousComputation, double ratio, String pathRouteTimeFile, String newTrainType,
                      String pathLog, TrainTime sourceTime, String pathRouteStopTime, int trainNotToLoad, String pathStationDatabase,String pathTrainTypeAverageSpeedList) {
         if (sourceTime != null) {
@@ -246,12 +425,12 @@ public class Scheduler {
         Scheduler scheduler = new Scheduler();
         if (!scheduler.addRouteFromFile(pathRoute)) {
             System.out.println("Unable to load route file");
-            return;
+            return Collections.emptyList();
         }
         ArrayList<Integer> stopTime = RouteHelper.getStopTime(pathRouteStopTime);
         int minDelayBwTrains = 3;
         int noOfPaths = 10;
-        List<Path> paths;
+        List<Path> paths = new ArrayList<Path>();
         int count;
         try {
             PrintStream o1 = new PrintStream(new File(pathLog + File.separator + "Output Type Full Day " + trainDay + " TrainType " + newTrainType +
@@ -284,5 +463,6 @@ public class Scheduler {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return paths;
     }
 }

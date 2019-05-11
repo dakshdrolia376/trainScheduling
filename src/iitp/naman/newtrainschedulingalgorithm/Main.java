@@ -5,7 +5,7 @@ import iitp.naman.newtrainschedulingalgorithm.util.*;
 
 import java.io.File;
 import java.io.PrintStream;
-
+import java.util.*;
 public class Main {
 
     public static void main(String[] args) {
@@ -87,9 +87,27 @@ public class Main {
             sourceTime = null;
             trainNotToLoad = -1;
             pathRouteStopTime = "data" + File.separator + "route" + File.separator + "routeStopTimePnbeMgsExp.txt";
-            scheduler.test(pathMaxSpeedLimit, pathTemp, pathRoute, pathBestRoute, pathTrainBase, true, 0,
+            List<Boolean> runningStatus = new ArrayList<>();
+            runningStatus.add(true);
+            runningStatus.add(true);
+            runningStatus.add(true);
+            runningStatus.add(false);
+            runningStatus.add(false);
+            runningStatus.add(false);
+            runningStatus.add(false);
+            scheduler.addRouteFromFile(pathRoute);
+//            List<List<Integer>> a = scheduler.getCongestionDetails(scheduler.getStationIdList());
+//            for(List<Integer> i: a)
+//                System.out.println(i.toString());
+
+//            scheduler.scheduleTrain(pathMaxSpeedLimit, pathTemp, pathRoute, pathBestRoute, pathTrainBase, true,
+//                    usePreviousComputation, ratio, pathRouteTimeMed, newTrainType, pathLog, sourceTime, pathRouteStopTime,
+//                    trainNotToLoad, pathStationDatabase, pathAverageSpeedList, runningStatus);
+////            for(trainDay = 0; trainDay <4; trainDay++) {
+            scheduler.test(pathMaxSpeedLimit, pathTemp, pathRoute, pathBestRoute, pathTrainBase, true, trainDay,
                     usePreviousComputation, ratio, pathRouteTimeMed, newTrainType, pathLog, sourceTime, pathRouteStopTime,
                     trainNotToLoad, pathStationDatabase, pathAverageSpeedList);
+//            }
 //
 //            System.setOut(console1);
 //            System.setErr(console);
